@@ -805,7 +805,7 @@ local rule generate-setup-cmd ( version : command : parent : options * : cpu : g
 
     local setup-options ;
     local setup = [ feature.get-values <setup-$(cpu)> : $(options) ] ;
-    
+
     if ! $(setup)-is-defined
     {
         if $(global-setup)-is-defined
@@ -1037,6 +1037,10 @@ local rule configure-really ( version ? : options * )
             local default-global-setup-options-i386  = x86 ;
             local default-global-setup-options-ia64  = x86_ia64 ;
             local default-global-setup-options-arm   = x86_arm ;
+            local default-global-setup-options-store-amd64 = "x86_amd64 store" ;
+            local default-global-setup-options-store-i386  = "x86 store" ;
+            local default-global-setup-options-store-ia64  = "x86_ia64 store" ;
+            local default-global-setup-options-store-arm   = "x86_arm store" ;
 
             # When using 64-bit Windows, and targeting 64-bit, it is possible to
             # use a native 64-bit compiler, selected by the "amd64" & "ia64"
@@ -1049,6 +1053,7 @@ local rule configure-really ( version ? : options * )
             if [ MATCH ^(AMD64) : [ os.environ PROCESSOR_ARCHITECTURE ] ]
             {
                 default-global-setup-options-amd64 = amd64 ;
+                default-global-setup-options-store-amd64 = amd64 ;
             }
             # When Boost.Build itself is running as a 32-bit process on 64-bit
             # Windows, the above test will fail (since WOW64 simulates a 32-bit
@@ -1057,6 +1062,7 @@ local rule configure-really ( version ? : options * )
             if [ MATCH ^(AMD64) : [ os.environ PROCESSOR_ARCHITEW6432 ] ]
             {
                 default-global-setup-options-amd64 = amd64 ;
+                default-global-setup-options-store-amd64 = amd64 ;
             }
             # TODO: The same 'native compiler usage' should be implemented for
             # the Itanium platform by using the "ia64" parameter. For this
@@ -1070,6 +1076,7 @@ local rule configure-really ( version ? : options * )
             for local c in $(cpu)
             {
                 setup-$(c) = [ generate-setup-cmd $(version) : $(command) : $(parent) : $(options) : $(c) : $(global-setup) : $(default-global-setup-options-$(c)) : $(default-setup-$(c)) ] ;
+                setup-store-$(c) = [ generate-setup-cmd $(version) : $(command) : $(parent) : $(options) : $(c) : $(global-setup) : $(default-global-setup-options-store-$(c)) : $(default-setup-$(c)) ] ;
             }
             
             # Windows phone has different setup scripts, located in a different directory hierarchy.
@@ -1167,6 +1174,7 @@ local rule configure-really ( version ? : options * )
                 }
                 else
                 {
+                    setup-script = $(setup-store-$(c)) ;
                     toolset.flags msvc.compile .CC  <windows-api>$(api)/$(cpu-conditions) : $(setup-script)$(compiler) /Zm800 /ZW /EHsc -nologo ;
                 }
                 toolset.flags msvc.compile .ASM <windows-api>$(api)/$(cpu-conditions) : $(setup-script)$(cpu-assembler) -nologo ;
